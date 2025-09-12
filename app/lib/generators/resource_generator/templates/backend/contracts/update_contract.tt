@@ -1,0 +1,18 @@
+# frozen_string_literal: true
+
+module <%= namespace %>
+  module Contracts
+    module <%= camel_plural %>
+      class UpdateContract < Dry::Validation::Contract
+        <%= contract_deps %>
+
+        params do
+          required(:id).filled(:integer)
+          required(:record).hash do
+<%= contract_fields %>
+          end
+        end
+      end
+    end
+  end
+end

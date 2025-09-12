@@ -1,0 +1,20 @@
+# frozen_string_literal: true
+
+RSpec.describe "GET /<%= plural %>", :db, type: :request do
+  let(:<%= singular %>_repo) { Hanami.app["repos.<%= singular %>_repo"] }
+  let(:user_repo) { Hanami.app["repos.user_repo"] }
+
+  it "returns list of <%= plural %>" do
+    # NOTE: Replace empty hashes below with valid attributes matching your migration constraints.
+    <%= singular %>_repo.create({})
+    <%= singular %>_repo.create({})
+
+    login_as user_repo.create(email: "someemail.com", full_name: "Full Name")
+    get "/<%= plural %>"
+
+    expect(last_response).to be_successful
+
+    response_body = JSON.parse(last_response.body)
+    expect(response_body["records"].size).to eq(2)
+  end
+end

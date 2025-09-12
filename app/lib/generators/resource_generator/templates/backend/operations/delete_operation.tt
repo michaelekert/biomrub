@@ -1,0 +1,45 @@
+# frozen_string_literal: true
+
+module <%= namespace %>
+  module Operations
+    module <%= camel_plural %>
+      class DeleteOperation < <%= namespace %>::Operation
+        include Deps[
+          "repos.<%= repo %>",
+          "contracts.destroy_contract"
+        ]
+
+        def call(params)
+          sanitized_params = step validate(params)
+          step find_record(sanitized_params[:id])
+          step delete_record(sanitized_params[:id])
+        end
+
+        private
+
+        def validate(params)
+          contract_result = destroy_contract.call(params)
+
+          if contract_result.success?
+            Success(contract_result.to_h)
+          else
+            Failure[:validation_error, contract_result.errors.to_h]
+          end
+        end
+
+        def find_record(id)
+          if <%= repo %>.exists?(id)
+            Success()
+          else
+            Failure(:not_found)
+          end
+        end
+
+        def delete_record(id)
+          <%= repo %>.delete(id)
+          Success()
+        end
+      end
+    end
+  end
+end

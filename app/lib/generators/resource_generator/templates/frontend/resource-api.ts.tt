@@ -1,0 +1,121 @@
+import camelcaseKeys from "camelcase-keys";
+import snakecaseKeys from "snakecase-keys";
+import SessionsApi from "@/api/sessions-api";
+import { formatApiErrors } from "@/lib/utils";
+
+const <%= camel_plural %>Api = {
+  async index() {
+    const response = await fetch("/<%= plural %>");
+    const responseJson = await response.json();
+    const responseData = camelcaseKeys(responseJson, { deep: true });
+
+    if (response.status === 401) {
+      console.warn("Unauthorized - redirecting to login");
+      window.location.href = "/login";
+      return;
+    }
+
+    if (!response.ok) {
+      const errorMessages = formatApiErrors(responseData.errors);
+      throw new Error(errorMessages);
+    }
+
+    return responseData;
+  },
+
+  async show(id: number) {
+    const response = await fetch(`/<%= plural %>/${id}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    const responseJson = await response.json();
+    const responseData = camelcaseKeys(responseJson, { deep: true });
+
+    if (!response.ok) {
+      const errorMessages = formatApiErrors(responseData.errors);
+      throw new Error(errorMessages);
+    }
+
+    return responseData.record;
+  },
+
+  async create(data: { <%= typescript_interface_fields %> }) {
+    const csrfToken = await SessionsApi.getCsrfToken();
+    const payload = {
+      _csrf_token: csrfToken,
+      record: snakecaseKeys({ ...data }, { deep: true }),
+    };
+
+    const response = await fetch("/<%= plural %>", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      const errorMessages = formatApiErrors(errorData.errors);
+      throw new Error(errorMessages || "Failed to create <%= camel %>");
+    }
+  },
+
+  async update(id: number, data: { <%= typescript_interface_fields %> }) {
+    const csrfToken = await SessionsApi.getCsrfToken();
+    const payload = {
+      _csrf_token: csrfToken,
+      id,
+      record: snakecaseKeys({ ...data }, { deep: true }),
+    };
+
+    const response = await fetch(`/<%= plural %>/${id}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      const errorMessages = formatApiErrors(errorData.errors);
+      throw new Error(errorMessages || "Failed to update <%= camel %>");
+    }
+  },
+
+  async delete(id: number) {
+    const csrfToken = await SessionsApi.getCsrfToken();
+    const payload = {
+      _csrf_token: csrfToken,
+    };
+
+    const response = await fetch(`/<%= plural %>/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (response.status === 500) {
+      throw new Error("Server Error");
+    }
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      const errorMessages = formatApiErrors(errorData.errors);
+      throw new Error(errorMessages);
+    }
+  },
+};
+
+export default <%= camel_plural %>Api;
+

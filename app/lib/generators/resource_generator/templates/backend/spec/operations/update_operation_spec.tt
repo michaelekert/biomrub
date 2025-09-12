@@ -1,0 +1,7 @@
+# frozen_string_literal: true
+
+RSpec.describe <%= namespace %>::Operations::<%= camel_plural %>::UpdateOperation, :db, type: :operation do
+  let(:<%= repo %>) { Hanami.app["repos.<%= repo %>"] }
+
+  # Add your tests here
+end

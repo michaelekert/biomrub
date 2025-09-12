@@ -1,0 +1,16 @@
+# frozen_string_literal: true
+
+module <%= namespace %>
+  module Actions
+    module <%= camel_plural %>
+      class Index < <%= namespace %>::Action
+        include Deps["repos.<%= repo %>"]
+
+        def handle(_request, response)
+          records = <%= repo %>.all
+          response.body = { records: records.map(&:to_h) }.to_json
+        end
+      end
+    end
+  end
+end

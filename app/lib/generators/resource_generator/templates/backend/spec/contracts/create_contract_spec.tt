@@ -1,0 +1,9 @@
+# frozen_string_literal: true
+
+RSpec.describe <%= namespace %>::Contracts::<%= camel %>s::CreateContract, :db do
+  let(:contract) { described_class.new }
+
+  let(:<%= repo %>) { <%= namespace %>::Repos::<%= camel %>Repo.new }
+
+  # Add your tests here
+end

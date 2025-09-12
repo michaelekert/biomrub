@@ -1,0 +1,36 @@
+# frozen_string_literal: true
+
+module <%= namespace %>
+  module Repos
+    class <%= camel %>Repo < <%= namespace %>::DB::Repo
+      commands :create, update: :by_pk, delete: :by_pk
+
+      def all
+        <%= plural %>
+          .select(<%= columns_list.map { |col| ":#{col}" }.join(", ") %>)
+          .order(<%= plural %>[:created_at].asc)
+          .to_a
+      end
+
+      def update(attributes)
+        id = attributes[:id]
+        record = attributes[:record] || {}
+
+        <%= plural %>.by_pk(id).command(:update).call(record)
+        find(id)
+      end
+
+      def find(id)
+        <%= plural %>.where(id: id).one
+      end
+
+      def delete(id)
+        <%= plural %>.by_pk(id).delete
+      end
+
+      def exists?(id)
+        <%= plural %>.by_pk(id).exist?
+      end
+    end
+  end
+end

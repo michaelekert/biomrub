@@ -1,0 +1,33 @@
+# frozen_string_literal: true
+
+module <%= namespace %>
+  module Operations
+    module <%= camel_plural %>
+      class CreateOperation < <%= namespace %>::Operation
+        include Deps["repos.<%= repo %>", "contracts.<%= plural %>.create_contract"]
+
+        def call(params)
+          sanitized_params = step validate(params)
+          step create_record(sanitized_params)
+        end
+
+        private
+
+        def validate(params)
+          contract_result = create_contract.call(params)
+
+          if contract_result.success?
+            Success(contract_result.to_h)
+          else
+            Failure[:validation_error, contract_result.errors.to_h]
+          end
+        end
+
+        def create_record(sanitized_params)
+          record = <%= repo %>.create(sanitized_params[:record])
+          Success(record)
+        end
+      end
+    end
+  end
+end

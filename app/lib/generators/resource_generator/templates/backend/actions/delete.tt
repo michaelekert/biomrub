@@ -1,0 +1,24 @@
+# frozen_string_literal: true
+
+module <%= namespace %>
+  module Actions
+    module <%= camel_plural %>
+      class Delete < <%= namespace %>::Action
+        include Deps["operations.<%= plural %>.delete_operation"]
+
+        def handle(request, response)
+          case delete_operation.call(request.params.to_h)
+          in Success
+            response.status = 204
+          in Failure[:validation_error, errors]
+            response.status = 400
+            response.body = { errors: errors }.to_json
+          in Failure(:not_found)
+            response.status = 404
+            response.body = { errors: "<%= camel %> not found" }.to_json
+          end
+        end
+      end
+    end
+  end
+end

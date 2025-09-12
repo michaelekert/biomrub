@@ -1,0 +1,16 @@
+# frozen_string_literal: true
+
+RSpec.describe "POST /<%= plural %>", :db, type: :request do
+  let(:<%= repo %>) { Hanami.app["repos.<%= repo %>"] }
+  let(:user_repo) { Hanami.app["repos.user_repo"] }
+  let(:request_headers) do
+    { "HTTP_ACCEPT" => "application/json", "CONTENT_TYPE" => "application/json" }
+  end
+
+  before do
+    current_user = user_repo.create(email: "some@email_1.com", full_name: "Full Name 1")
+    login_as current_user
+  end
+
+  # Add your tests here
+end

@@ -1,0 +1,39 @@
+# frozen_string_literal: true
+
+module <%= namespace %>
+  module Operations
+    module <%= camel_plural %>
+      class UpdateOperation < <%= namespace %>::Operation
+        include Deps["repos.<%= repo %>", "contracts.<%= plural %>.update_contract"]
+
+        def call(params)
+          sanitized_params = step validate(params)
+          step find_record(sanitized_params[:id])
+          step update_record(sanitized_params)
+        end
+
+        private
+
+        def validate(params)
+          contract_result = update_contract.call(params)
+
+          if contract_result.success?
+            Success(contract_result.to_h)
+          else
+            Failure[:validation_error, contract_result.errors.to_h]
+          end
+        end
+
+        def find_record(id)
+          record = <%= repo %>.find(id)
+          record ? Success() : Failure(:not_found)
+        end
+
+        def update_record(sanitized_params)
+          updated_record = <%= repo %>.update(sanitized_params)
+          Success(updated_record)
+        end
+      end
+    end
+  end
+end

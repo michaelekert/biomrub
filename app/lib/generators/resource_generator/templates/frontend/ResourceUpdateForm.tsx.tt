@@ -1,0 +1,116 @@
+"use client";
+
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
+import { z } from "zod";
+import <%= camel_plural %>Api from "@/api/<%= resource_name %>-api";
+<%= typescript_reference_imports %>
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import showToast from "@/lib/toasts";
+
+<% frontend_columns_data.select { |c| c[:raw_type] == "reference" }.each do |col| -%>
+type <%= col[:name].capitalize %> = { id: number; name?: string };
+<% end -%>
+
+const <%= camel %>Schema = z.object({
+  <%= zod_schema_fields %>
+});
+
+type <%= camel %>FormValues = z.infer<typeof <%= camel %>Schema>;
+
+export default function <%= camel %>UpdateForm({ id }: { id: number }) {
+  const navigate = useNavigate();
+
+  const form = useForm({
+    resolver: zodResolver(<%= camel %>Schema),
+    defaultValues: {
+      <% frontend_columns_data.each do |col| -%>
+      <%= col[:raw_type] == "reference" ? "#{col[:name]}Id" : col[:name] %>: <%= col[:type] == "string" ? '""' : col[:type] == "number" ? "0" : col[:type] == "boolean" ? "false" : '""' %>,
+      <% end -%>
+    },
+  });
+
+  <% frontend_columns_data.select { |c| c[:raw_type] == "reference" }.each do |col| -%>
+  const [<%= inflector.pluralize(col[:name].downcase) %>, set<%= inflector.pluralize(col[:name].capitalize) %>] = useState<<%= col[:name].capitalize %>[]>([]);
+  <% end -%>
+
+  useEffect(() => {
+    <%= camel_plural %>Api.show(id)
+      .then((data) => form.reset(data))
+      .catch((error) =>
+        showToast({ variant: "error", description: `Failed to load <%= singular %>: ${error.message}` })
+      );
+
+    <% frontend_columns_data.select { |c| c[:raw_type] == "reference" }.each do |col| -%>
+    <%= inflector.camelize(inflector.pluralize(col[:name].downcase)) %>Api.index()
+      .then((data) => set<%= inflector.camelize(inflector.pluralize(col[:name].downcase)) %>(data.records))
+      .catch((err) => console.error("Failed to fetch <%= col[:name] %>", err.message));
+    <% end -%>
+  }, [id, form]);
+
+  async function onSubmit(values: <%= camel %>FormValues) {
+    <%= camel_plural %>Api.update(id, values)
+      .then(() => {
+        navigate("/list_<%= plural %>");
+        showToast({ variant: "success", description: "<%= camel %> updated" });
+      })
+      .catch((error) => showToast({ variant: "error", description: error.message }));
+  }
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <% frontend_columns_data.each do |col| -%>
+        <FormField
+          control={form.control}
+          name="<%= col[:raw_type] == "reference" ? "#{col[:name]}Id" : col[:name] %>"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel><%= col[:name].capitalize %></FormLabel>
+              <FormControl>
+                <% if col[:raw_type] == "reference" -%>
+                <Select
+                  value={field.value !== undefined ? String(field.value) : ""}
+                  onValueChange={(value) => field.onChange(Number(value))}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a <%= col[:name] %>" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {<%= col[:name] %>s.map((item) => (
+                      <SelectItem key={item.id} value={String(item.id)}>
+                        {item.name ?? item.id}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <% else -%>
+                <Input placeholder="Enter <%= col[:name] %>" {...field} />
+                <% end -%>
+              </FormControl>
+              <FormDescription>Enter <%= col[:name] %> here.</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <% end -%>
+        <Button className="w-full mt-auto" type="submit">
+          Submit
+        </Button>
+      </form>
+    </Form>
+  );
+}

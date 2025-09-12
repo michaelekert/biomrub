@@ -1,0 +1,104 @@
+import type { ColumnDef } from "@tanstack/react-table";
+import { ArrowUpDown, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import <%= camel_plural %>Api from "@/api/<%= plural %>-api";
+<%= typescript_reference_imports %>
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import DataTable from "./DataTable";
+import showToast from "@/lib/toasts";
+import { useEditable, EditableCell } from "@/components/EditableCell";
+
+export type <%= camel %> = {
+  id: number;
+  <%= typescript_interface_fields %>
+};
+
+export default function <%= camel_plural %>Table() {
+  const navigate = useNavigate();
+  const [data, setData] = useState<<%= camel %>[]>([]);
+  const { editingCell, setEditingCell } = useEditable<<%= camel %>>();
+
+  <% frontend_columns_data.select { |col| col[:raw_type] == "reference" }.each do |col| %>
+  const [<%= inflector.pluralize(col[:name].downcase) %>, set<%= inflector.camelize(inflector.pluralize(col[:name].downcase)) %>] = useState<{ id: number; name?: string }[]>([]);
+  const <%= col[:name].downcase %>NameById = new Map(<%= inflector.pluralize(col[:name].downcase) %>.map(r => [r.id, r.name ?? r.id]));
+  <% end %>
+
+  useEffect(() => {
+    <%= camel_plural %>Api.index().then((responseData) => setData(responseData.records));
+    <% frontend_columns_data.select { |col| col[:raw_type] == "reference" }.each do |col| %>
+    <%= inflector.camelize(inflector.pluralize(col[:name].downcase)) %>Api.index().then(res => set<%= inflector.camelize(inflector.pluralize(col[:name].downcase)) %>(res.records));
+    <% end %>
+  }, []);
+
+  const handleDelete = async (<%= singular %>Id: number) => {
+    <%= camel_plural %>Api.delete(<%= singular %>Id)
+      .then(() => {
+        setData((prevData) => prevData.filter((p) => p.id !== <%= singular %>Id));
+        showToast({ variant: "success", description: "<%= camel %> deleted" });
+      })
+      .catch((error) => showToast({ variant: "error", description: error.message }));
+  };
+
+  const handleSave = <K extends keyof <%= camel %>>(rowId: number, columnId: K, newValue: <%= camel %>[K]) => {
+    const row = data.find((d) => d.id === rowId);
+    if (!row) return;
+
+    const updatedRow = { ...row, [columnId]: newValue };
+
+    <%= camel_plural %>Api.update(rowId, updatedRow)
+      .then(() => {
+        setData((prev) => prev.map((d) => (d.id === rowId ? updatedRow : d)));
+        setEditingCell(null);
+        showToast({ variant: "success", description: `${COLUMN_LABELS[String(columnId)] ?? columnId} updated` });
+      })
+      .catch((err) => showToast({ variant: "error", description: err.message }));
+  };
+
+  const columns: ColumnDef<<%= camel %>>[] = [
+    <%= typescript_column_defs %>,
+    {
+      id: "actions",
+      enableHiding: false,
+      cell: ({ row }) => {
+        const record = row.original;
+        return (
+          <div className="flex justify-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost">
+                  <span className="sr-only">Open menu</span>
+                  <MoreHorizontal />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => navigate(`/update_<%= singular %>/${record.id}`)}>
+                  <Pencil className="mr-2 h-4 w-4" />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleDelete(record.id)}>
+                  <Trash2 />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        );
+      },
+    }
+  ];
+
+  const COLUMN_LABELS: Record<string, string> = {
+    <%= typescript_column_labels %>
+  };
+
+  return <DataTable columns={columns} data={data} labels={COLUMN_LABELS} />;
+}

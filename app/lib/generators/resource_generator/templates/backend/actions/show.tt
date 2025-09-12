@@ -1,0 +1,27 @@
+# frozen_string_literal: true
+
+module <%= namespace %>
+  module Actions
+    module <%= camel_plural %>
+      class Show < <%= namespace %>::Action
+        include Deps["repos.<%= repo %>"]
+
+        params do
+          required(:id).value(:integer)
+        end
+
+        def handle(request, response)
+          record = <%= repo %>.find(request.params[:id])
+
+          if record
+            response.status = 200
+            response.body = { record: record.to_h }.to_json
+          else
+            response.status = 404
+            response.body = { errors: "<%= camel %> not found" }.to_json
+          end
+        end
+      end
+    end
+  end
+end

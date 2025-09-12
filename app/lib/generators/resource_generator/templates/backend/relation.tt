@@ -1,0 +1,9 @@
+# frozen_string_literal: true
+
+module <%= namespace %>
+  module Relations
+    class <%= camel_plural %> < <%= namespace %>::DB::Relation
+      schema :<%= plural %>, infer: true
+    end
+  end
+end
