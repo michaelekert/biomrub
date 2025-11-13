@@ -7,7 +7,7 @@ gem "hanami", "~> 2.2"
 gem "hanami-controller", "~> 2.2"
 gem "hanami-db", "~> 2.2"
 gem "hanami-router", "~> 2.2"
-gem "hanami-validations", "~> 2.2"
+gem "hanami-validations", "~> 2.3"
 gem "hanami-view", "~> 2.2"
 
 gem "dry-inflector"
